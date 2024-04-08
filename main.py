@@ -45,7 +45,7 @@ def download_video(video, output_path, index):
 
     download_file(stream.url, video_filepath)
 
-def download_playlist(url, output_path='./', max_workers=5):
+def download_playlist(url, output_path='./', start_index=1, max_workers=3):
     try:
         playlist = Playlist(url)
         playlist._video_regex = re.compile(r"\"url\":\"(/watch\?v=[\w-]*)")
@@ -57,11 +57,14 @@ def download_playlist(url, output_path='./', max_workers=5):
         total_videos = len(playlist.videos)
         print(f"Total videos: {total_videos}")
 
+        videos_to_skip = start_index - 1 if start_index else 0
+        videos_to_download = playlist.videos[videos_to_skip:total_videos]
+
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
-            for i, video in enumerate(playlist.videos, start=1):
+            for i, video in enumerate(videos_to_download, start=videos_to_skip + 1):
                 futures.append(executor.submit(download_video, video, playlist_dir, i))
-            for future in tqdm(futures, desc="Downloading videos", total=total_videos):
+            for future in tqdm(futures, desc="Downloading videos", total=total_videos - videos_to_skip):
                 try:
                     future.result()
                 except Exception as e:
@@ -78,7 +81,8 @@ def download_playlist(url, output_path='./', max_workers=5):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python script.py <playlist_url>")
+        print("Usage: python main.py <playlist_url> [start_index]")
         sys.exit(1)
     playlist_url = sys.argv[1]
-    download_playlist(playlist_url)
+    start_index = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+    download_playlist(playlist_url, start_index=start_index)
