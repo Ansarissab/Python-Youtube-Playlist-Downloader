@@ -38,6 +38,7 @@ def download_video(video, output_path, index):
     video_filename = f"{index:02d}_{video.title}_{resolution}p.mp4"
     video_filepath = os.path.join(output_path, video_filename)
 
+    # Check if the file already exists in the directory
     if os.path.exists(video_filepath):
         print(f"{video_title} is already available in the directory. Skipping...")
         return
