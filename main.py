@@ -3,6 +3,19 @@ import os
 import re
 import sys
 from tqdm import tqdm
+import requests
+
+def download_file(url, filepath):
+    # Download the file using requests library
+    response = requests.get(url, stream=True)
+    total_size = int(response.headers.get('content-length', 0))
+
+    # Open the file and write the contents of the response
+    with open(filepath, 'wb') as f:
+        with tqdm(total=total_size, unit='B', unit_scale=True, desc=os.path.basename(filepath), ncols=100) as pbar:
+            for data in response.iter_content(chunk_size=1024):
+                f.write(data)
+                pbar.update(len(data))
 
 def download_playlist(url, output_path='./'):
     try:
@@ -23,37 +36,38 @@ def download_playlist(url, output_path='./'):
         print(f"Total videos: {total_videos}")
 
         # Iterate over each video in the playlist and download it
-        for video in tqdm(playlist.videos, desc="Downloading videos"):
-            video_title = video.title
-            video_filename = video.streams.get_highest_resolution().default_filename
+        for i, video in enumerate(playlist.videos):
+            video_title = f"{i+1:02d} - {video.title}"
+
+            # Get the resolution of the downloaded stream
+            resolution = None
+            stream_360p = video.streams.filter(res="360p").first()
+            stream_480p = video.streams.filter(res="480p").first()
+            stream_720p = video.streams.filter(res="720p").first()
+            if stream_360p:
+                resolution = "360"
+                stream = stream_360p
+            elif stream_480p:
+                resolution = "480"
+                stream = stream_480p
+            elif stream_720p:
+                resolution = "720"
+                stream = stream_720p
+            else:
+                resolution = "unknown"
+                stream = video.streams.get_highest_resolution()
+
+            video_filename = f"{i+1:02d}_{video.title}_{resolution}p.mp4"
+            video_filepath = os.path.join(playlist_dir, video_filename)
 
             # Check if the video file already exists in the directory
-            if os.path.exists(os.path.join(playlist_dir, video_filename)):
+            if os.path.exists(video_filepath):
                 print(f"{video_title} is already available in the directory. Skipping...")
                 continue
 
             # Download the video and display progress
-            with tqdm(total=100, desc=f"Downloading {video_title}", unit="%", leave=False) as pbar:
-                def progress_function(stream, chunk, bytes_remaining):
-                    pbar.update((1 - bytes_remaining / video.streams.get_highest_resolution().filesize) * 100)
-
-                stream_360p = video.streams.filter(res="360p").first()
-                if stream_360p:
-                    stream_360p.download(playlist_dir, on_progress_callback=progress_function)
-                else:
-                    stream_480p = video.streams.filter(res="480p").first()
-                    if stream_480p:
-                        stream_480p.download(playlist_dir, on_progress_callback=progress_function)
-                    else:
-                        stream_720p = video.streams.filter(res="720p").first()
-                        if stream_720p:
-                            stream_720p.download(playlist_dir, on_progress_callback=progress_function)
-                        else:
-                            highest_resolution = video.streams.get_highest_resolution()
-                            try:
-                                highest_resolution.download(playlist_dir, on_progress_callback=progress_function)
-                            except:
-                                failed_videos.append(video.watch_url)
+            print(f"Downloading {video_title}...")
+            download_file(stream.url, video_filepath)
 
         print("Download complete!")
 
