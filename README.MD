@@ -1,4 +1,4 @@
-Certainly! Here's a simple template for a README file:
+Absolutely! Here's the updated README file:
 
 ---
 
@@ -6,7 +6,7 @@ Certainly! Here's a simple template for a README file:
 
 ## Overview
 
-This Python script allows you to download the entire contents of a YouTube playlist using the Pytube library. It supports downloading videos in different resolutions and provides progress tracking during the download process.
+This Python script allows you to download the entire contents of a YouTube playlist. It supports downloading videos in different resolutions and provides progress tracking during the download process. The script utilizes the Pytube library for fetching video information and the requests library for downloading the videos.
 
 ## Features
 
@@ -15,12 +15,14 @@ This Python script allows you to download the entire contents of a YouTube playl
 - Display progress during the download process
 - Automatically skip videos that have already been downloaded
 - Handles cases where certain resolutions are not available for specific videos
+- Multi-threaded downloading for improved performance
 
 ## Requirements
 
 - Python 3.x
 - Pytube library
 - tqdm library
+- requests library
 
 ## Installation
 
@@ -33,7 +35,7 @@ This Python script allows you to download the entire contents of a YouTube playl
 2. Install the required libraries:
 
    ```
-   pip install pytube tqdm
+   pip install pytube tqdm requests
    ```
 
 ## Usage
@@ -52,7 +54,7 @@ This Python script allows you to download the entire contents of a YouTube playl
 
 ## Configuration
 
-- You can modify the `output_path` variable in the `main.py` file to specify the directory where the downloaded videos should be saved.
+- You can modify the `max_workers` parameter in the `download_playlist` function in the `main.py` file to specify the maximum number of concurrent downloads. Adjusting this parameter can improve download speed but may also increase system resource usage.
 
 ## Contribution
 
@@ -64,4 +66,6 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ---
 
-Feel free to customize this template according to your specific project details and preferences!
+## Connect with me
+
+Feel free to customize this template further based on your specific project details and preferences! If you have any further updates or additions, just let me know [here!](https://github.com/Ansarissab)
