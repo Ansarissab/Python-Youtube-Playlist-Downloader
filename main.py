@@ -1,7 +1,8 @@
-import re
 from pytube import Playlist
-import sys
 import os
+import re
+import sys
+from tqdm import tqdm
 
 def download_playlist(url, output_path='./'):
     try:
@@ -9,35 +10,60 @@ def download_playlist(url, output_path='./'):
         playlist._video_regex = re.compile(r"\"url\":\"(/watch\?v=[\w-]*)")
         print(f"Downloading playlist: {playlist.title}")
 
-        # Create a directory for the playlist
+        # Create a directory for the playlist if it doesn't already exist
         playlist_dir = os.path.join(output_path, playlist.title)
-        os.makedirs(playlist_dir, exist_ok=True)
+        if not os.path.exists(playlist_dir):
+            os.makedirs(playlist_dir)
+
+        # List to store links of videos that couldn't be downloaded
+        failed_videos = []
+
+        # Total number of videos in the playlist
+        total_videos = len(playlist.videos)
+        print(f"Total videos: {total_videos}")
 
         # Iterate over each video in the playlist and download it
-        for video in playlist.videos:
-            print(f"Downloading {video.title}...")
-            video.streams.get_highest_resolution().download(playlist_dir)
+        for video in tqdm(playlist.videos, desc="Downloading videos"):
+            video_title = video.title
+            video_filename = video.streams.get_highest_resolution().default_filename
+
+            # Check if the video file already exists in the directory
+            if os.path.exists(os.path.join(playlist_dir, video_filename)):
+                print(f"{video_title} is already available in the directory. Skipping...")
+                continue
+
+            # Download the video and display progress
+            with tqdm(total=100, desc=f"Downloading {video_title}", unit="%", leave=False) as pbar:
+                def progress_function(stream, chunk, bytes_remaining):
+                    pbar.update((1 - bytes_remaining / video.streams.get_highest_resolution().filesize) * 100)
+
+                stream_360p = video.streams.filter(res="360p").first()
+                if stream_360p:
+                    stream_360p.download(playlist_dir, on_progress_callback=progress_function)
+                else:
+                    stream_480p = video.streams.filter(res="480p").first()
+                    if stream_480p:
+                        stream_480p.download(playlist_dir, on_progress_callback=progress_function)
+                    else:
+                        stream_720p = video.streams.filter(res="720p").first()
+                        if stream_720p:
+                            stream_720p.download(playlist_dir, on_progress_callback=progress_function)
+                        else:
+                            highest_resolution = video.streams.get_highest_resolution()
+                            try:
+                                highest_resolution.download(playlist_dir, on_progress_callback=progress_function)
+                            except:
+                                failed_videos.append(video.watch_url)
 
         print("Download complete!")
+
+        # Print links of videos that couldn't be downloaded
+        if failed_videos:
+            print("The following videos could not be downloaded:")
+            for link in failed_videos:
+                print(link)
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-
-
-# def get_playlist_size(url):
-#     try:
-#         playlist = Playlist(url)
-#         total_size_bytes = sum(video.streams.get_highest_resolution().filesize for video in playlist.videos)
-#         total_size_gb = total_size_bytes / (1024 * 1024 * 1024)  # Convert bytes to GB
-#         return total_size_gb
-#     except Exception as e:
-#         print(f"An error occurred: {str(e)}")
-#         return None
-
-# if __name__ == "__main__":
-#     playlist_url = input("Enter the YouTube playlist URL: ")
-#     total_size = get_playlist_size(playlist_url)
-#     if total_size is not None:
-#         print(f"Total size of the playlist: {total_size:.2f} GB")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
