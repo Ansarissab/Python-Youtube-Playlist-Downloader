@@ -15,7 +15,9 @@ def download_file(url, filepath):
                 f.write(data)
                 pbar.update(len(data))
 
-def download_video(video, output_path):
+def download_video(video, output_path, index):
+    video_title = f"{index:02d} - {video.title}"
+
     resolution = None
     stream_360p = video.streams.filter(res="360p").first()
     stream_480p = video.streams.filter(res="480p").first()
@@ -33,11 +35,13 @@ def download_video(video, output_path):
         resolution = "unknown"
         stream = video.streams.get_highest_resolution()
 
-    video_filename = f"{video.title}_{resolution}p.mp4"
+    video_filename = f"{index:02d}_{video.title}_{resolution}p.mp4"
     video_filepath = os.path.join(output_path, video_filename)
+
     if os.path.exists(video_filepath):
-        print(f"{video.title} is already available in the directory. Skipping...")
+        print(f"{video_title} is already available in the directory. Skipping...")
         return
+
     download_file(stream.url, video_filepath)
 
 def download_playlist(url, output_path='./', max_workers=5):
@@ -54,8 +58,8 @@ def download_playlist(url, output_path='./', max_workers=5):
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
-            for video in playlist.videos:
-                futures.append(executor.submit(download_video, video, playlist_dir))
+            for i, video in enumerate(playlist.videos, start=1):
+                futures.append(executor.submit(download_video, video, playlist_dir, i))
             for future in tqdm(futures, desc="Downloading videos", total=total_videos):
                 try:
                     future.result()
