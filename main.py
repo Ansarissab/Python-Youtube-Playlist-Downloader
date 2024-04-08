@@ -35,6 +35,9 @@ def download_playlist(url, output_path='./'):
         total_videos = len(playlist.videos)
         print(f"Total videos: {total_videos}")
 
+        # Total size of downloaded files
+        total_size_bytes = 0
+
         # Iterate over each video in the playlist and download it
         for i, video in enumerate(playlist.videos):
             video_title = f"{i+1:02d} - {video.title}"
@@ -69,7 +72,12 @@ def download_playlist(url, output_path='./'):
             print(f"Downloading {video_title}...")
             download_file(stream.url, video_filepath)
 
-        print("Download complete!")
+            # Update total size
+            total_size_bytes += os.path.getsize(video_filepath)
+
+        # Convert total size to human-readable format
+        total_size_mb = total_size_bytes / (1024 * 1024)
+        print(f"Download complete! Total size: {total_size_mb:.2f} MB")
 
         # Print links of videos that couldn't be downloaded
         if failed_videos:
