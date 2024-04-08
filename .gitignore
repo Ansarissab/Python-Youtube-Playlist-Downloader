@@ -1,0 +1,5 @@
+# Ignore all directories
+*/
+
+# Except the main.py file
+!main.py
